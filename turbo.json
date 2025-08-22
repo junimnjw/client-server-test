@@ -1,0 +1,33 @@
+{
+    "$schema": "https://turborepo.org/schema.json",
+    "tasks": {
+      "build": {
+        "dependsOn": ["^build"],
+        "outputs": [
+          "packages/ide-webview-ui/dist/**",
+          "packages/server/dist/**",
+          "packages/vscode-extension/dist/**"
+        ]
+      },
+      "dev": {
+        "cache": false
+      },
+      "lint": {
+        "outputs": []
+      },
+      "check-types": {
+        "outputs": []
+      },
+      "storybook": {
+        "outputs": ["packages/*/storybook-static/**"]
+      },
+      "package": {
+        "dependsOn": ["build"],
+        "outputs": ["packages/vscode-extension/*.vsix"]
+      },
+      "test": {
+        "outputs": []
+      }
+    }
+  }
+  

@@ -1,0 +1,76 @@
+---
+alwaysApply: true
+---
+
+# 빌드 시스템 & 패키지 관리
+
+## 패키지 매니저
+- **pnpm** 사용 (npm 대신)
+- `pnpm-lock.yaml` 파일로 종속성 버전 고정
+- `pnpm-workspace.yaml`으로 모노레포 구성
+
+## 빌드 도구
+- **Turbo** 사용하여 통합 빌드 파이프라인 구성
+- **esbuild** 사용하여 번들링 (서버 패키지)
+- **TypeScript** 컴파일러 사용 (Extension 패키지)
+
+## 모노레포 구조
+```
+packages/
+├── server/           # Node.js 서버 (CommonJS)
+├── vscode-extension/ # VSCode Extension
+└── ide-webview-ui/   # React Webview UI
+```
+
+## 빌드 스크립트
+- `pnpm build`: 모든 패키지 빌드
+- `pnpm dev`: 개발 모드 (watch)
+- `pnpm lint`: 코드 품질 검사
+- `pnpm check-types`: 타입 검사
+- `pnpm test`: 테스트 실행
+
+## Node.js 버전
+- `.nvmrc` 파일로 Node.js 버전 관리
+- 서버: Node 22.18 타겟
+- Extension: VSCode 1.74+ 지원
+
+## 출력 디렉토리
+- `dist/`: 빌드된 파일
+- `out/`: 릴리즈 파일
+- `release/`: 배포용 패키지
+# 빌드 시스템 & 패키지 관리
+
+## 패키지 매니저
+- **pnpm** 사용 (npm 대신)
+- `pnpm-lock.yaml` 파일로 종속성 버전 고정
+- `pnpm-workspace.yaml`으로 모노레포 구성
+
+## 빌드 도구
+- **Turbo** 사용하여 통합 빌드 파이프라인 구성
+- **esbuild** 사용하여 번들링 (서버 패키지)
+- **TypeScript** 컴파일러 사용 (Extension 패키지)
+
+## 모노레포 구조
+```
+packages/
+├── server/           # Node.js 서버 (CommonJS)
+├── vscode-extension/ # VSCode Extension
+└── ide-webview-ui/   # React Webview UI
+```
+
+## 빌드 스크립트
+- `pnpm build`: 모든 패키지 빌드
+- `pnpm dev`: 개발 모드 (watch)
+- `pnpm lint`: 코드 품질 검사
+- `pnpm check-types`: 타입 검사
+- `pnpm test`: 테스트 실행
+
+## Node.js 버전
+- `.nvmrc` 파일로 Node.js 버전 관리
+- 서버: Node 22.18 타겟
+- Extension: VSCode 1.74+ 지원
+
+## 출력 디렉토리
+- `dist/`: 빌드된 파일
+- `out/`: 릴리즈 파일
+- `release/`: 배포용 패키지

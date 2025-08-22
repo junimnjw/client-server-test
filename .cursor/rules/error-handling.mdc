@@ -1,0 +1,224 @@
+# title: Error Handling Standard (Client–Server)
+# audience: FE(Front-End), BE(Back-end), UX
+# tags: api, error, i18n, contract, ux-policy
+# status: adopt
+# intent
+- 클라이언트–서버 아키텍처에서 **에러 응답을 표준화**합니다.
+- FE/UX는 타입 기반 **일관된 UI 정책**을 적용하고, BE는 **단일 계약**으로 유지합니다.
+
+---
+
+## Contract (Minimal Required)
+서버는 실패 시 **항상** 아래 포맷으로 응답합니다.
+```json
+{
+  "error": {
+    "code": "BUILD.TZ.SIGNING_FAILED",
+    "type": "dependency",
+    "userMessageKey": "error.build.signingFailed",
+    "userMessageArgs": { "profile": "Default" },
+    "correlationId": "c7f2..."
+  }
+}
+
+### Field 의미
+ - code (string): 시스템 내부 식별자. 로깅/대시보드 집계 키. 예) CERT.PROFILE.NOT_FOUND. 
+ - type (enum): UX 정책 분류 키. validation | auth | not_found | conflict | precondition | rate_limit | dependency | unavailable | internal
+ - userMessageKey (string): i18n 리소스 키. 사용자에게 노출되는 최종 문구는 클라이언트가 렌더링.
+ - userMessageArgs (object, optional): i18n 메시지 치환 파라미터.
+ - correlationId (string): 서버 로그 추적/사용자 신고 대응용 식별자.
+
+### Optional Fields (상황별 선택)
+- retryAfterMs (number): 429/503 등에서 대기 시간 안내가 필요할 때만.
+- action (enum): 서버가 특정 CTA를 강제해야 할 때만(REAUTH, DOWNLOAD_TOOL 등).
+- details / message: 스테이징/개발 환경에서만. 운영 기본 비노출(민감정보 마스킹 필수).
+- httpStatus: HTTP 상태코드로 이미 표현되므로 본문 포함 비권장(중복).
+
+## Type ➜ UX Policy (클라이언트 기본 처리 규칙)
+type	| 기본 UI 패턴 |	기본 CTA/행동 예시
+validation |	인라인 필드 에러/폼 하이라이트	| 없음/포커스 이동
+auth	|재인증 모달/로그인 리다이렉트	| REAUTH 버튼
+not_found	| 정보 배너 + “목록 새로고침”	| REFRESH
+conflict 	| 	충돌 안내 모달	| “다시 불러오기”
+precondition	| 가이드 모달(준비물 안내)	| “SDK 설치”, “프로파일 생성”
+rate_limit	| 대기 안내 토스트 + 카운트다운	| 자동/수동 RETRY (retryAfterMs)
+dependency	| 외부도구/네트워크 실패 토스트	| “로그 보기”, “네트워크 확인”
+unavailable	| 상단 전역 배너(서버 상태)	| “서버 다시 연결/재시작”
+internal	| 일반 오류 토스트	|  “로그 보기” + correlationId 복사
+
+- 핵심: FE는 type만으로 공통 정책을 적용합니다. 세부 code별 커스텀은 선택입니다.
+
+## i18n (Internationalization)
+- 서버는 메시지 텍스트를 내려주지 않습니다. 오직 userMessageKey(+userMessageArgs)만 내립니다.
+- 클라이언트는 i18n 라이브러리(예: i18next)로 키 → 언어별 번역을 렌더링합니다.
+
+## 리소스 예시
+```json
+// ko.json
+{
+  "error.build.signingFailed": "서명 과정에서 오류가 발생했습니다 (프로파일: {{profile}}).",
+  "error.cert.profileNotFound": "앱을 실행하기 전에 인증서 프로파일을 생성해야 합니다."
+}
+
+```json
+// en.json
+{
+  "error.build.signingFailed": "Signing process failed (profile: {{profile}}).",
+  "error.cert.profileNotFound": "You must create a certificate profile before running the app."
+}
+
+## Server Rules (Express 예시)
+- 모든 도메인 예외는 AppError(type, code, cause?)로 던집니다.
+- 마지막 한 지점의 에러 핸들러에서 표준 포맷으로 변환합니다.
+- 예시:
+// app-error.ts
+export class AppError extends Error {
+  constructor(
+    public type:
+      | 'validation'|'auth'|'not_found'|'conflict'|'precondition'|'rate_limit'|'dependency'|'unavailable'|'internal',
+    public code: string,
+    public cause?: unknown
+  ) { super(typeof cause==='string' ? cause : (cause as any)?.message); }
+}
+
+// error-handler.ts
+const status = { validation:400, auth:401, not_found:404, conflict:409,
+  precondition:412, rate_limit:429, dependency:502, unavailable:503, internal:500 } as const;
+
+export const errorHandler = () => (err:any, req:any, res:any, _next:any) => {
+  const id = req.headers['x-correlation-id'] ?? crypto.randomUUID();
+
+  if (err instanceof AppError) {
+    const http = status[err.type] ?? 500;
+    return res.status(http).json({
+      error: {
+        code: err.code,
+        type: err.type,
+        userMessageKey: mapUserKey(err.code),
+        userMessageArgs: mapUserArgs(err),
+        correlationId: id
+      }
+    });
+  }
+  return res.status(500).json({
+    error: {
+      code: 'GENERIC.INTERNAL_ERROR',
+      type: 'internal',
+      userMessageKey: 'error.generic.internal',
+      userMessageArgs: {},
+      correlationId: id
+    }
+  });
+};
+
+
+## Client Rules
+- 모든 네트워크 호출은 공통 래퍼를 거칩니다. 실패는 UiError로 표준화합니다.
+- 예시:
+
+// api-client.ts
+export type UiError = {
+  code: string;
+  type:
+    | 'validation'|'auth'|'not_found'|'conflict'|'precondition'|'rate_limit'|'dependency'|'unavailable'|'internal';
+  userMessage: string;
+  correlationId: string;
+  raw?: unknown;
+};
+
+export async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Correlation-Id': crypto.randomUUID(),
+      ...(init?.headers||{})
+    }
+  });
+
+  if (res.ok) return (await res.json()) as T;
+
+  let body: any = {};
+  try { body = await res.json(); } catch {}
+  const e = body?.error ?? {};
+  const userMessage = i18n.t(e.userMessageKey, e.userMessageArgs);
+
+  throw <UiError>{
+    code: e.code ?? 'GENERIC.INTERNAL_ERROR',
+    type: e.type ?? 'internal',
+    userMessage,
+    correlationId: e.correlationId ?? '',
+    raw: body
+  };
+}
+
+
+## FE 기본 처리 전략
+
+- 표시: error.userMessage를 토스트/배너/모달로 표시(패턴은 type에 따라 결정).
+- 행동: type 매핑대로 CTA 노출(예: precondition → “준비 작업” 버튼).
+- 로깅: code, type, correlationId만 수집(PII 금지).
+- 재시도 규칙: rate_limit/unavailable는 지수 백오프 또는 retryAfterMs 존중.
+- 예시 
+
+1) precondition (SDK 미설치)
+
+{
+  "error": {
+    "code": "BUILD.SDK_NOT_INSTALLED",
+    "type": "precondition",
+    "userMessageKey": "error.build.sdkNotInstalled",
+    "userMessageArgs": { "name": "TizenCore-CLI" },
+    "correlationId": "ab12..."
+  }
+}
+
+- FE: 모달 “TizenCore-CLI가 필요합니다” + [SDK 설치하기] 버튼 표시.
+
+2) dependency (서명 도구 실패)
+{
+  "error": {
+    "code": "BUILD.TZ.SIGNING_FAILED",
+    "type": "dependency",
+    "userMessageKey": "error.build.signingFailed",
+    "userMessageArgs": { "profile": "Default" },
+    "correlationId": "c7f2..."
+  }
+}
+
+- FE: 토스트 “서명 오류” + [로그 보기] 버튼.
+
+3) rate_limit (선택 필드 활용)
+{
+  "error": {
+    "code": "RATE.LIMIT.EXCEEDED",
+    "type": "rate_limit",
+    "userMessageKey": "error.rateLimit",
+    "userMessageArgs": { "seconds": 10 },
+    "correlationId": "rl-01",
+    "retryAfterMs": 10000
+  }
+}
+- FE: 카운트다운 후 자동 재시도 또는 수동 재시도 버튼.
+
+## QA Checklist
+ - 모든 실패 경로가 위 표준 포맷으로 반환되는가?
+ - type에 따른 FE UI 패턴이 일관적으로 동작하는가?
+ - i18n 키 누락 시 안전한 폴백 문구를 제공하는가?
+ - correlationId는 서버 로그에서 추적 가능한가?
+ - 운영 환경에서 details/message 비노출이 보장되는가?
+
+## Non-Goals
+- 비동기 백그라운드 잡의 상태 추적(폴링/웹소켓)은 본 표준 범위 밖.
+- 권한/보안 정책 자체(인증/인가 로직)는 별도 문서에서 규정.
+- Migration Plan (Draft)
+- 서버 전역 에러 핸들러 도입 → 도메인 예외 AppError 표준화
+- 주요 API부터 순차 적용(프로젝트 생성 → 빌드 → 배포/에뮬레이터)
+- FE 공통 request() 래퍼 적용 및 type→UI 매핑 테이블 연결
+- i18n 리소스 채우기 및 폴백 전략 확정
+- 대시보드/로그 수집 필드(code,type,correlationId) 표준화
+
+## 결론
+- 서버: 하나의 에러 포맷 + 최소 필드 유지.
+- 클라이언트: type 기반 UI 정책 + i18n으로 사용자 문구 렌더.
+- UX: 키/정책만 합의하면 어디서나 동일한 경험 제공.

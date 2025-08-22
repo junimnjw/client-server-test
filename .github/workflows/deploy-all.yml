@@ -1,0 +1,118 @@
+name: Deploy Server & VS Code Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployServer:
+        description: 'Deploy Server runtime? (true/false)'
+        required: false
+        default: 'true'
+      deployExtension:
+        description: 'Deploy VS Code extension? (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release-server:
+    name: Package and Release Server Runtime
+    if: ${{ github.event.inputs.deployServer == 'true' }}
+    runs-on: [code-linux, code-default]
+    env:
+      GH_TOKEN: ${{ secrets.GH_PAT_FOR_GHES }}
+      GH_HOST: github.sec.samsung.net
+    defaults:
+      run:
+        working-directory: packages/server
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Install pnpm with npm
+        run: npm install -g pnpm@10.12.4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build, package, and stage artifacts
+        run: node scripts/release.js
+
+
+
+      - name: Read server version
+        id: version_manifest
+        run: |
+          SERVER_VERSION=$(node -p "require('./package.json').version")
+          echo "serverVersion=$SERVER_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: GitHub CLI login (GHES)
+        run: |
+          echo "${{secrets.GH_PAT_FOR_GHES}}" | gh auth login --with-token --hostname github.sec.samsung.net
+          gh auth status --hostname github.sec.samsung.net
+
+      - name: Create Release and upload assets (GHES)
+        run: |
+          TAG="tizen-extension-server@${{ steps.version_manifest.outputs.serverVersion }}"
+          TITLE="Server Release ${{ steps.version_manifest.outputs.serverVersion }}"
+          gh release create "$TAG" \
+            release/*.zip \
+            --title "$TITLE" \
+            --generate-notes \
+            --repo github.sec.samsung.net/developer-interface/tizen.extension.v2 \
+            --target ${{ github.sha }}
+
+  build-and-release-extension:
+    name: Package and Release VSIX
+    if: ${{ github.event.inputs.deployExtension == 'true' }}
+    runs-on: [code-linux, code-default]
+    env:
+      GH_TOKEN: ${{ secrets.GH_PAT_FOR_GHES }}
+      GH_HOST: github.sec.samsung.net
+    defaults:
+      run:
+        working-directory: packages/vscode-extension
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install pnpm with npm
+        run: npm install -g pnpm@10.12.4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build and package VS Code extension
+      - name: Build & package (VSIX)
+        run: pnpm run release
+
+      - name: Read extension version
+        id: read_version
+        run: |
+          EXT_VERSION=$(node -p "require('./package.json').version")
+          echo "extensionVersion=$EXT_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: GitHub CLI login (GHES)
+        run: |
+          echo "${{secrets.GH_PAT_FOR_GHES}}" | gh auth login --with-token --hostname github.sec.samsung.net
+          gh auth status --hostname github.sec.samsung.net
+
+      - name: Create Release and upload assets (GHES)
+        run: |
+          TAG="vscode-extension@${{ steps.read_version.outputs.extensionVersion }}"
+          TITLE="VS Code Extension Release ${{ steps.read_version.outputs.extensionVersion }}"
+          gh release create "$TAG" \
+            ./*.vsix \
+            --title "$TITLE" \
+            --generate-notes \
+            --repo github.sec.samsung.net/developer-interface/tizen.extension.v2 \
+            --target ${{ github.sha }}

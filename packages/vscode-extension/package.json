@@ -1,0 +1,41 @@
+{
+  "name": "vscode-extension",
+  "displayName": "Client Server Version",
+  "description": "VSCode extension with auto-updating server",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tizen-extension-server.checkUpdate",
+        "title": "Check Server Update",
+        "category": "Tizen Extension Server"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "dev": "tsc -p ./ -w"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/semver": "^7.7.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "extract-zip": "^2.0.1",
+    "semver": "^7.7.2"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "client-server-version",
+  "version": "1.0.2",
+  "description": "VSCode extension with auto-updating server",
+  "private": true,
+  "workspaces": [
+    "packages/server",
+    "packages/vscode-extension"
+  ],
+  "scripts": {
+    "build": "pnpm build:server && pnpm build:client",
+    "build:client": "cd packages/vscode-extension && pnpm build",
+    "build:server": "cd packages/server && pnpm build",
+    "dev:server": "cd packages/server && pnpm dev",
+    "release:server": "cd packages/server && pnpm release"
+  },
+  "dependencies": {
+    "glob": "^11.0.3"
+  }
+}

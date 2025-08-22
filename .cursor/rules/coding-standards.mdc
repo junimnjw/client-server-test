@@ -1,0 +1,62 @@
+---
+alwaysApply: true
+---
+
+# 코딩 표준 & 네이밍 컨벤션
+
+## 네이밍 규칙
+- **클래스명**: PascalCase (예: `ErrorHandler`, `ServerManager`)
+- **변수명**: camelCase (예: `errorCode`, `serverProcess`)
+- **파일명**: kebab-case (예: `error-handler.ts`, `server-manager.ts`)
+- **함수명**: camelCase (예: `handleApiError`, `startServer`)
+
+## TypeScript 규칙
+- `any` 타입 사용 금지, 명시적 타입 선언 필수
+- 사용하지 않는 함수, 변수, 매개변수 제거
+- 인터페이스는 `I` 접두사 없이 명사형으로 명명
+- 타입은 `T` 접두사 없이 명사형으로 명명
+
+## 코드 품질
+- 명확하고 읽기 쉬운 코드 작성
+- 불필요하게 복잡하지 않게 구현
+- 중복 코드는 재사용 가능하도록 리팩토링
+- 에러가 발생할 수 있는 부분은 미리 처리
+
+## 주석 규칙
+- 모든 주석은 영어로 작성
+- JSDoc 스타일 사용 (함수, 클래스, 인터페이스)
+- 복잡한 비즈니스 로직에 대한 설명 포함
+
+## 에러 처리
+- 표준 에러 코드 사용: `E_NET_FAIL`, `E_PERM_DENIED`, `E_PATH_EXISTS` 등
+- 에러 발생 가능성이 있는 부분에 대한 방어적 프로그래밍
+- 사용자 친화적인 에러 메시지 제공
+# 코딩 표준 & 네이밍 컨벤션
+
+## 네이밍 규칙
+- **클래스명**: PascalCase (예: `ErrorHandler`, `ServerManager`)
+- **변수명**: camelCase (예: `errorCode`, `serverProcess`)
+- **파일명**: kebab-case (예: `error-handler.ts`, `server-manager.ts`)
+- **함수명**: camelCase (예: `handleApiError`, `startServer`)
+
+## TypeScript 규칙
+- `any` 타입 사용 금지, 명시적 타입 선언 필수
+- 사용하지 않는 함수, 변수, 매개변수 제거
+- 인터페이스는 `I` 접두사 없이 명사형으로 명명
+- 타입은 `T` 접두사 없이 명사형으로 명명
+
+## 코드 품질
+- 명확하고 읽기 쉬운 코드 작성
+- 불필요하게 복잡하지 않게 구현
+- 중복 코드는 재사용 가능하도록 리팩토링
+- 에러가 발생할 수 있는 부분은 미리 처리
+
+## 주석 규칙
+- 모든 주석은 영어로 작성
+- JSDoc 스타일 사용 (함수, 클래스, 인터페이스)
+- 복잡한 비즈니스 로직에 대한 설명 포함
+
+## 에러 처리
+- 표준 에러 코드 사용: `E_NET_FAIL`, `E_PERM_DENIED`, `E_PATH_EXISTS` 등
+- 에러 발생 가능성이 있는 부분에 대한 방어적 프로그래밍
+- 사용자 친화적인 에러 메시지 제공

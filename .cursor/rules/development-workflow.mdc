@@ -1,0 +1,38 @@
+# 개발 워크플로우 & 테스트
+
+## 개발 환경 설정
+1. **Node.js 설치**: `.nvmrc`에 명시된 버전 사용
+2. **pnpm 설치**: `npm install -g pnpm`
+3. **의존성 설치**: `pnpm install`
+4. **개발 서버 시작**: `pnpm dev`
+
+## 코드 품질 관리
+- **ESLint**: 코드 스타일 및 품질 검사
+- **TypeScript**: 타입 안전성 보장
+- **Prettier**: 코드 포맷팅 (권장)
+- **Husky**: Git hooks로 품질 검사 자동화
+
+## 테스트 전략
+- **단위 테스트**: Jest + ts-jest 사용
+- **통합 테스트**: API 엔드포인트 테스트
+- **E2E 테스트**: VSCode Extension 동작 테스트
+- **테스트 커버리지**: 최소 80% 목표
+
+## 브랜치 전략
+- **main**: 안정적인 릴리즈 버전
+- **develop**: 개발 중인 기능
+- **feature/***: 개별 기능 개발
+- **hotfix/***: 긴급 수정
+
+## 릴리즈 프로세스
+1. **버전 업데이트**: `package.json` 버전 수정
+2. **빌드**: `pnpm build` 실행
+3. **테스트**: `pnpm test` 실행
+4. **패키징**: `pnpm package` 실행
+5. **배포**: `.vsix` 파일 배포
+
+## 디버깅 가이드
+- **서버**: `packages/server/src/`에서 로그 확인
+- **Extension**: VSCode 개발자 도구 사용
+- **Webview**: 브라우저 개발자 도구 사용
+- **통신**: Network 탭에서 API 호출 모니터링

@@ -1,0 +1,26 @@
+# 프로젝트 아키텍처 & 경계 규칙
+
+## 클라이언트-서버 아키텍처
+- **클라이언트**: `packages/vscode-extension` (IDE Extension), `packages/ide-webview-ui` (React Webview UI)
+- **서버**: `packages/server` (Node.js 런타임, TypeScript, CommonJS)
+- 주요 비즈니스 모델/도메인 규칙은 서버에 정의
+- 클라이언트는 API 계약으로만 서버에 접근
+
+## 모듈 경계
+기능은 서버의 모듈 경계로 나눔:
+- **App Core**: 생성/빌드/실행/디버깅
+- **Certificate Manager**: 생성/삭제/관리
+- **Device Manager**: 연결/상태/로그 + 필터
+- **Emulator Manager**: 속성 CRUD + 실행
+- **Package Manager**: 외부 패키지 설치/삭제/종속성 관리
+
+## 통신 계약
+- 요청/응답 스키마를 서버로 정의
+- 장기 작업은 **비동기 작업 식별자(taskId) + 진행 이벤트**로 제공
+- 표준 에러 포맷 사용: `{ "type":"AppError", "errorCode":"E_CODE", "message":"...", "cause":"..." }`
+
+## 레이어 규칙
+- **Webview(UI)**: 표시/입력/피드백만 담당, 비즈니스 로직/파일 IO/프로세스 실행 금지
+- **Extension**: 오케스트레이션/상태관리/워크스페이스 통합만 담당
+- **서버**: 파일 시스템/프로세스 실행/툴 설치 수행
+- **Extension**: 서버를 다운받고, 실행하는 주체

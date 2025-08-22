@@ -1,0 +1,48 @@
+# API 설계 & 통신 계약
+
+## RESTful API 구조
+- **버전 관리**: `/v1/` 접두사 사용
+- **리소스 중심**: 명사형 엔드포인트 사용
+- **HTTP 메서드**: GET, POST, PUT, DELETE 적절히 사용
+
+## API 라우트 구성
+```
+/v1/
+├── health/              # 서버 상태 확인
+├── sdk-init/           # SDK 초기화
+├── sdk-path/           # SDK 경로 관리
+├── project/            # 프로젝트 관리
+├── certificate-manager/ # 인증서 관리
+├── device-manager/     # 디바이스 관리
+├── emulator-manager/   # 에뮬레이터 관리
+├── package-manager/    # 패키지 관리
+└── update/             # 업데이트 관리
+```
+
+## 비동기 작업 처리
+장기 작업은 비동기 패턴 사용:
+```typescript
+// 작업 시작
+POST /v1/project
+Response: { taskId: "uuid", status: "started" }
+
+// 진행 상태 조회
+GET /v1/progress/:taskId
+Response: { status: "running", progress: 75, message: "..." }
+
+// 작업 완료
+GET /v1/progress/:taskId
+Response: { status: "completed", result: {...} }
+```
+
+## 요청/응답 스키마
+- **요청**: Zod 스키마로 검증
+- **응답**: 일관된 형식으로 표준화
+- **에러**: 표준 에러 응답 형식 사용
+- **타입 안전성**: TypeScript 인터페이스로 정의
+
+## 통신 프로토콜
+- **로컬 통신**: HTTP over localhost
+- **포트**: 12345 (기본값)
+- **인증**: 로컬 프로세스이므로 별도 인증 불필요
+- **CORS**: Webview UI 접근 허용

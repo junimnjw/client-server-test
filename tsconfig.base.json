@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "lib": ["ES2022"],
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": false,
+      "skipLibCheck": true,
+      "strict": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "resolveJsonModule": true
+    }
+  }
+  
